@@ -6,7 +6,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -14,6 +13,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
+import androidx.core.app.TaskStackBuilder
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.wan.simplenotif.databinding.ActivityMainBinding
@@ -49,6 +49,12 @@ class MainActivity : AppCompatActivity() {
         binding.btnSendNotification.setOnClickListener {
             sendNotification(title, message)
         }
+        binding.btnOpenDetail.setOnClickListener {
+            val detailIntent = Intent(this@MainActivity, DetailActivity::class.java)
+            detailIntent.putExtra(DetailActivity.EXTRA_TITLE, title)
+            detailIntent.putExtra(DetailActivity.EXTRA_MESSAGE, message)
+            startActivity(detailIntent)
+        }
 
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
@@ -59,13 +65,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun sendNotification(title: String, message: String) {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("http://dicoding.com"))
-        val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_IMMUTABLE else 0
-        )
+        val notifDetailIntent = Intent(this, DetailActivity::class.java)
+        notifDetailIntent.putExtra(DetailActivity.EXTRA_TITLE, title)
+        notifDetailIntent.putExtra(DetailActivity.EXTRA_MESSAGE, message)
+
+        val pendingIntent = TaskStackBuilder.create(this).run {
+            addNextIntentWithParentStack(notifDetailIntent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                getPendingIntent(
+                    NOTIFICATION_ID,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            } else {
+                getPendingIntent(NOTIFICATION_ID, PendingIntent.FLAG_UPDATE_CURRENT)
+            }
+        }
 
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
